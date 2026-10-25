@@ -16,3 +16,7 @@ done
 echo "Watching redeploy run ${RUN_ID}"
 gh run watch "$RUN_ID" --exit-status --interval 5
 echo "Redeploy verified: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
+
+for n in $(gh issue list --label alert --state open --json number --jq '.[].number'); do
+  gh issue close "$n" --comment "Recovered: rollback for incident \`${INCIDENT}\` redeployed and passed the post-deploy smoke test."
+done
