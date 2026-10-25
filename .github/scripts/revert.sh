@@ -23,6 +23,20 @@ Reverts ${SHA} (\"${SUBJECT}\"), the change identified as the trigger of the pro
 - Orchestrated by: Port self-healing incident workflow"
 
 PR_URL=$(gh pr create --base main --head "$BRANCH" --title "Revert \"${SUBJECT}\"" --body "$BODY")
+
+# The revert goes through CI like any other change before it is merged.
+OUT=""
+for i in $(seq 1 20); do
+  OUT=$(gh pr checks "$PR_URL" 2>&1 || true)
+  echo "$OUT" | grep -q "no checks reported" || break
+  sleep 3
+done
+if echo "$OUT" | grep -q "no checks reported"; then
+  echo "No CI reported on the revert PR; the redeploy still runs the test suite"
+else
+  gh pr checks "$PR_URL" --watch --interval 5
+fi
+
 gh pr merge "$PR_URL" --squash --delete-branch
 
 echo "Rollback PR: ${PR_URL}" >> "$GITHUB_STEP_SUMMARY"
