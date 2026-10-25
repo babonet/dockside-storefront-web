@@ -1,0 +1,6 @@
+node_modules/
+*.log
+smoke-report.md
+alert.md
+followup.md
+ids.json

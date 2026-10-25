@@ -1,0 +1,59 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why this deploy was triggered
+        required: false
+        default: manual
+      verification:
+        description: Set by the rollback workflow so a failed verification does not raise a second alert
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Unit tests
+        run: npm test
+
+      # Simulated rollout: the service runs inside the runner and is treated as production.
+      - name: Roll out to production
+        run: |
+          echo "Rolling out ${GITHUB_SHA::7} of ${{ github.event.repository.name }}"
+          nohup node src/server.js > server.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8080/health > /dev/null && exit 0
+            sleep 0.5
+          done
+          echo "Service did not become healthy"; cat server.log; exit 1
+
+      - name: Post-deploy smoke test
+        id: smoke
+        run: node scripts/smoke.js http://localhost:8080
+
+      - name: Raise production alert
+        if: failure() && steps.smoke.outcome == 'failure' && inputs.verification != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SERVICE: ${{ github.event.repository.name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/raise-alert.sh

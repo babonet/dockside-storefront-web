@@ -1,0 +1,14 @@
+{
+  "name": "dockside-storefront-web",
+  "version": "3.12.0",
+  "private": true,
+  "description": "Customer-facing storefront for Dockside Market",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test",
+    "smoke": "node scripts/smoke.js http://localhost:8080"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

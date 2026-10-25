@@ -1,0 +1,40 @@
+name: Incident follow-up
+run-name: "Follow-up for incident ${{ inputs.incident }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      incident:
+        description: Port incident identifier
+        required: true
+      title:
+        description: Issue title
+        required: true
+      body:
+        description: Issue body (markdown)
+        required: true
+      assign_copilot:
+        description: Assign the GitHub Copilot coding agent
+        required: false
+        default: "true"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  followup:
+    name: Open follow-up issue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Open follow-up issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COPILOT_TOKEN: ${{ secrets.COPILOT_ASSIGN_TOKEN }}
+          INCIDENT: ${{ inputs.incident }}
+          TITLE: ${{ inputs.title }}
+          BODY: ${{ inputs.body }}
+          ASSIGN: ${{ inputs.assign_copilot }}
+        run: bash .github/scripts/followup.sh

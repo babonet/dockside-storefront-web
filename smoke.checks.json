@@ -1,0 +1,5 @@
+[
+  { "name": "Health endpoint", "method": "GET", "path": "/health", "expectStatus": 200 },
+  { "name": "Home page renders", "method": "GET", "path": "/", "expectStatus": 200 },
+  { "name": "Featured products API", "method": "GET", "path": "/api/featured", "expectStatus": 200 }
+]

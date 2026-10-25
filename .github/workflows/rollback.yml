@@ -1,0 +1,46 @@
+name: Rollback
+run-name: "Rollback ${{ inputs.sha }} (incident ${{ inputs.incident }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit to revert
+        required: true
+      incident:
+        description: Port incident identifier
+        required: false
+        default: manual
+      approved_by:
+        description: Who approved the rollback (or auto-policy)
+        required: false
+        default: auto-policy
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  rollback:
+    name: Revert and redeploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Open and merge revert PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ inputs.sha }}
+          INCIDENT: ${{ inputs.incident }}
+          APPROVED_BY: ${{ inputs.approved_by }}
+        run: bash .github/scripts/revert.sh
+
+      # Merges made with GITHUB_TOKEN do not trigger push workflows, so the redeploy is dispatched explicitly.
+      - name: Redeploy and verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INCIDENT: ${{ inputs.incident }}
+        run: bash .github/scripts/redeploy-and-wait.sh
